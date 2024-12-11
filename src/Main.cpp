@@ -9,6 +9,40 @@
 using json = nlohmann::json;
 
 json decode_bencoded_value(const std::string& encoded_value) {
+    switch (encoded_value[0]) {
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9': {
+        // Example: "5:hello" -> "hello"
+        size_t colon_index = encoded_value.find(':');
+        if (colon_index != std::string::npos) {
+            std::string number_string = encoded_value.substr(0, colon_index);
+            int64_t number = std::atoll(number_string.c_str());
+            std::string str = encoded_value.substr(colon_index + 1, number);
+            return json(str);
+        } else {
+            throw std::runtime_error("Invalid encoded value: " + encoded_value);
+        }
+        break;
+    }
+    case 'i': {
+        auto it = encoded_value.find('e');
+        if (it == std::string::npos || encoded_value[it] != 'e') {
+            throw std::runtime_error("Invalid encoded value: " + encoded_value);
+        }
+        std::string number_string = encoded_value.substr(1, it);
+        int64_t number = std::atoll(number_string.c_str());
+        return json(number);
+        break;
+    }
+
+    }
     if (std::isdigit(encoded_value[0])) {
         // Example: "5:hello" -> "hello"
         size_t colon_index = encoded_value.find(':');
