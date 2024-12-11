@@ -8,76 +8,58 @@
 
 using json = nlohmann::json;
 
-json parse_string(std::string& encoded_value) {
+json parse_string(const std::string& encoded_value, std::size_t& index) {
     // Example: "5:hello" -> "hello"
-    size_t colon_index = encoded_value.find(':');
+    size_t colon_index = encoded_value.find(':', index);
     if (colon_index != std::string::npos) {
-        std::string number_string = encoded_value.substr(0, colon_index);
+        std::string number_string = encoded_value.substr(index, colon_index-index);
         int64_t number = std::atoll(number_string.c_str());
         std::string str = encoded_value.substr(colon_index + 1, number);
-        encoded_value.erase(0, colon_index + 1 + number);
+        index = colon_index + 1 + number;
         return json(str);
     } else {
         throw std::runtime_error("Invalid encoded value: " + encoded_value);
     }
 }
 
-json parse_integer(std::string& encoded_value) {
-    auto it = encoded_value.find('e');
-    if (it == std::string::npos || encoded_value[it] != 'e') {
+json parse_integer(const std::string& encoded_value, std::size_t& index) {
+    index++;
+    auto end = encoded_value.find('e', index);
+    if (end == std::string::npos) {
         throw std::runtime_error("Invalid encoded value: " + encoded_value);
     }
-    std::string number_string = encoded_value.substr(1, it);
-    int64_t number = std::atoll(number_string.c_str());
-    encoded_value.erase(0, it+1);
-    return json(number);
+    std::string number_string = encoded_value.substr(index, end - index);
+    index = end + 1;
+    return json(std::stoll(number_string));
 }
 
-json parse_list(const std::string& encoded_value) {
-    auto temp = encoded_value.substr(0, encoded_value.size()-1);
-    json result;
-    while (not temp.empty()) {
-        if (std::isdigit(temp[0])) {
-            result.push_back(parse_string(temp));
-            continue;
-        }
-        if (temp[0] == 'i') {
-            result.push_back(parse_integer(temp));
-            temp.erase(0,temp.find('e'));
-            continue;
-        }
+json decode_bencoded_value(const std::string& encoded_value, std::size_t& index);
+
+json parse_list(const std::string& encoded_value, size_t& index) {
+    json array = json::array();
+    index++;
+    while (encoded_value[index] != 'e') {
+        array.push_back(decode_bencoded_value(encoded_value, index));
     }
-    return result;
+    index++;
+    return array;
+}
+
+json decode_bencoded_value(const std::string& encoded_value, std::size_t& index) {
+    if (std::isdigit(encoded_value[index])) {
+        return parse_string(encoded_value, index);
+    } else if (encoded_value[index] == 'i') {
+        return parse_integer(encoded_value, index);
+    } else if (encoded_value[index] == 'l') {
+        return parse_list(encoded_value, index);
+    } else {
+        throw std::runtime_error("Unhandled encoded value: " + encoded_value);
+    }
 }
 
 json decode_bencoded_value(const std::string& encoded_value) {
-    switch (encoded_value[0]) {
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9': {
-        auto temp = encoded_value.substr(1);
-        return parse_string(temp);
-        break;
-    }
-    case 'i': {
-        auto temp = encoded_value.substr(1);
-        return parse_integer(temp);
-        break;
-    }
-    case 'l': {
-        auto temp = encoded_value.substr(1, encoded_value.size()-1);
-        return parse_list(temp);
-        break;
-    }
-    default:
-        throw std::runtime_error("Unhandled encoded value: " + encoded_value);
-    }
+    size_t position = 0;
+    return decode_bencoded_value(encoded_value, position);
 }
 
 int main(int argc, char* argv[]) {
