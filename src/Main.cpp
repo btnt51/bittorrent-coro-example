@@ -45,6 +45,18 @@ json parse_list(const std::string& encoded_value, size_t& index) {
     return array;
 }
 
+json parse_dictionary(const std::string& encoded_value, std::size_t& index) {
+    auto dict = json::object();
+    index++;
+    while (encoded_value[index] != 'e') {
+        auto temp = decode_bencoded_value(encoded_value, index).dump();
+        auto name = temp.substr(1, temp.size()-2);
+        dict[name] = decode_bencoded_value(encoded_value, index);
+    }
+    index++;
+    return dict;
+}
+
 json decode_bencoded_value(const std::string& encoded_value, std::size_t& index) {
     if (std::isdigit(encoded_value[index])) {
         return parse_string(encoded_value, index);
@@ -52,6 +64,8 @@ json decode_bencoded_value(const std::string& encoded_value, std::size_t& index)
         return parse_integer(encoded_value, index);
     } else if (encoded_value[index] == 'l') {
         return parse_list(encoded_value, index);
+    } else if (encoded_value[index] == 'd') {
+        return parse_dictionary(encoded_value, index);
     } else {
         throw std::runtime_error("Unhandled encoded value: " + encoded_value);
     }
@@ -85,7 +99,7 @@ int main(int argc, char* argv[]) {
         // Uncomment this block to pass the first stage
         std::string encoded_value = argv[2];
         json decoded_value = decode_bencoded_value(encoded_value);
-        std::cout << (decoded_value.dump() == "null" ? "[]" : decoded_value.dump())  << std::endl;
+        std::cout << decoded_value.dump()  << std::endl;
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
