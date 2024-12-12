@@ -3,6 +3,7 @@
 #include <vector>
 #include <cctype>
 #include <cstdlib>
+#include <fstream>
 
 #include "lib/nlohmann/json.hpp"
 
@@ -100,6 +101,20 @@ int main(int argc, char* argv[]) {
         std::string encoded_value = argv[2];
         json decoded_value = decode_bencoded_value(encoded_value);
         std::cout << decoded_value.dump()  << std::endl;
+    } else if (command == "info") {
+        if (argc < 3) {
+            std::cerr << "Usage: " << argv[0] << " info <encoded_value>" << std::endl;
+            return 1;
+        }
+
+        std::string filePath = argv[2];
+        std::ifstream file(filePath, std::ios::binary);
+        std::string fileContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        file.close();
+        int id = 0;
+        json decoded_value = decode_bencoded_value(fileContent);
+        std::cout << "Tracker URL: " << decoded_value["announce"].get<std::string>() << std::endl;
+        std::cout << "Length: " << decoded_value["info"]["length"].get<int>() << std::endl;
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;
