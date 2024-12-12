@@ -8,6 +8,14 @@ Info::Info(const nlohmann::json& j) : length(j["length"]), name(j["name"]),
 
 std::string Info::get_info_hash() const {return crypto::sha_1(to_bencoded_string());}
 
+std::string Info::get_pieces_hash() const {
+    std::string res;
+    for (auto i = 0; i < pieces.size(); i +=20) {
+        res.append(crypto::utility::to_hex_string(reinterpret_cast<uint8_t*>(pieces.substr(i, 20).data()), 20)+"\n");
+    }
+    return res;
+}
+
 std::string Info::to_bencoded_string() const {
     return "d" + coder::to_string::encode_pair("length", length) +
         coder::to_string::encode_pair("name", name) +

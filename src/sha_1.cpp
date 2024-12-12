@@ -5,6 +5,7 @@
 
 namespace crypto {
 
+namespace utility {
 inline uint32_t rotate_left(uint32_t value, unsigned int bits) {
     return (value << bits) | (value >> (32 - bits));
 }
@@ -25,7 +26,9 @@ std::string to_hex_string(const uint8_t* digest, size_t length) {
     return oss.str();
 }
 
+}
 
+using namespace crypto::utility;
 std::string sha_1(const std::vector<uint8_t>& data) {
     std::uint32_t h0 = 0x67452301;
     std::uint32_t h1 = 0xEFCDAB89;

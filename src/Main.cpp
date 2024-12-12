@@ -50,6 +50,8 @@ int main(int argc, char* argv[]) {
         std::cout << "Tracker URL: " << tor_file.get_announce() << std::endl;
         std::cout << "Length: " << tor_file.get_info_length() << std::endl;
         std::cout << "Info Hash: " << tor_file.get_info().get_info_hash() << std::endl;
+        std::cout << "Piece Length: " << tor_file.get_info().piece_length << std::endl;
+        std::cout << "Piece Hashes:\n" << tor_file.get_info().get_pieces_hash();
     } else {
         std::cerr << "unknown command: " << command << std::endl;
         return 1;

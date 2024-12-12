@@ -14,6 +14,8 @@ struct Info {
     Info(const nlohmann::json& j);
 
     std::string get_info_hash() const;
+
+    std::string get_pieces_hash() const;
 private:
     std::string to_bencoded_string() const;
 };
