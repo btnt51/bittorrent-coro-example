@@ -26,10 +26,26 @@ std::string to_hex_string(const uint8_t* digest, size_t length) {
     return oss.str();
 }
 
+std::string to_binary_string(const uint8_t* data, size_t length) {
+    std::ostringstream oss;
+    oss.fill('0');
+    oss << std::hex;
+
+    for (size_t i = 0; i < length; ++i) {
+        unsigned char c = data[i];
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            oss << c; // Оставляем символы без изменений
+        } else {
+            oss << '%' << std::setw(2) << static_cast<int>(c); // URL-кодирование
+        }
+    }
+    return oss.str();
+}
+
 }
 
 using namespace crypto::utility;
-std::string sha_1(const std::vector<uint8_t>& data) {
+std::vector<uint8_t> sha_1_binary(const std::vector<uint8_t>& data) {
     std::uint32_t h0 = 0x67452301;
     std::uint32_t h1 = 0xEFCDAB89;
     std::uint32_t h2 = 0x98BADCFE;
@@ -98,7 +114,8 @@ std::string sha_1(const std::vector<uint8_t>& data) {
         h3 += d;
         h4 += e;
     }
-    uint8_t digest[20];
+
+    std::vector<uint8_t> digest(20);
     digest[0]  = (h0 >> 24) & 0xff;
     digest[1]  = (h0 >> 16) & 0xff;
     digest[2]  = (h0 >> 8) & 0xff;
@@ -120,11 +137,27 @@ std::string sha_1(const std::vector<uint8_t>& data) {
     digest[18] = (h4 >> 8) & 0xff;
     digest[19] = (h4) & 0xff;
 
-    return to_hex_string(digest, 20);
+    return digest;
 }
 
-std::string sha_1(const std::string& str) {
+std::vector<std::uint8_t> sha_1_binary(const std::string& str) {
     std::vector<uint8_t> data(str.begin(), str.end());
-    return sha_1(data);
+    return sha_1_binary(data);
+}
+
+std::string sha_1_binary_string(const std::string& data) {
+    std::vector<uint8_t> digest = sha_1_binary(data);
+    return to_binary_string(digest.data(), digest.size());
+}
+
+
+std::string sha_1_string(const std::vector<uint8_t>& data) {
+    auto digest = sha_1_binary(data);
+    return to_hex_string(digest.data(), digest.size());
+}
+
+std::string sha_1_string(const std::string& str) {
+    std::vector<uint8_t> data(str.begin(), str.end());
+    return sha_1_string(data);
 }
 }

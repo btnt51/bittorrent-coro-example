@@ -12,13 +12,33 @@ nlohmann::json parse_dictionary(const std::string& encoded_value, std::size_t& i
 nlohmann::json decode_bencoded_value(const std::string& encoded_value, std::size_t& index);
 nlohmann::json decode_bencoded_value(const std::string& encoded_value);
 }
-namespace to_std {
-std::string parse_string(const std::string& encoded_value, std::size_t& index);
-long long parse_integer(const std::string& encoded_value, std::size_t& index);
-std::vector<std::any> parse_list(const std::string& encoded_value, size_t& index);
-std::unordered_map<std::string, std::any> parse_dictionary(const std::string& encoded_value, std::size_t& index);
-std::any decode_bencoded_value(const std::string& encoded_value, std::size_t& index);
-std::any decode_bencoded_value(const std::string& encoded_value);
+namespace to_string {
+struct BencodedValue;
+
+using BencodedValuePtr = std::shared_ptr<BencodedValue>;
+
+struct BencodedValue {
+    using ValueType = std::variant<
+        std::string,
+        int64_t,
+        std::vector<BencodedValuePtr>,
+        std::unordered_map<std::string, BencodedValuePtr>>;
+
+    ValueType value;
+
+    // Конструкторы для удобного создания значений
+    BencodedValue(std::string val) : value(std::move(val)) {}
+    BencodedValue(int64_t val) : value(val) {}
+    BencodedValue(std::vector<BencodedValuePtr> val) : value(std::move(val)) {}
+    BencodedValue(std::unordered_map<std::string, BencodedValuePtr> val) : value(std::move(val)) {}
+};
+
+BencodedValuePtr parse_string(const std::string& encoded_value, std::size_t& index);
+BencodedValuePtr parse_integer(const std::string& encoded_value, std::size_t& index);
+BencodedValuePtr parse_list(const std::string& encoded_value, size_t& index);
+BencodedValuePtr parse_dictionary(const std::string& encoded_value, std::size_t& index);
+BencodedValuePtr decode_bencoded_value(const std::string& encoded_value, std::size_t& index);
+BencodedValuePtr decode_bencoded_value(const std::string& encoded_value);
 }
 }
 
