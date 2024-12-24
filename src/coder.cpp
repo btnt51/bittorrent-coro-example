@@ -7,13 +7,12 @@ using json = nlohmann::json;
 
 json parse_string(const std::string& encoded_value, std::size_t& index) {
     // Example: "5:hello" -> "hello"
-    size_t colon_index = encoded_value.find(':', index);
-    if (colon_index != std::string::npos) {
-        std::string number_string = encoded_value.substr(index, colon_index-index);
-        int64_t number = std::atoll(number_string.c_str());
-        std::string str = encoded_value.substr(colon_index + 1, number);
+    if (const auto colon_index = encoded_value.find(':', index); colon_index != std::string::npos) {
+        const auto number_string = encoded_value.substr(index, colon_index-index);
+        const auto number = std::stoll(number_string);
+        auto str = encoded_value.substr(colon_index + 1, number);
         index = colon_index + 1 + number;
-        return json(str);
+        return static_cast<json>(str);
     } else {
         throw std::runtime_error("Invalid encoded value: " + encoded_value);
     }
@@ -21,18 +20,18 @@ json parse_string(const std::string& encoded_value, std::size_t& index) {
 
 json parse_integer(const std::string& encoded_value, std::size_t& index) {
     index++;
-    auto end = encoded_value.find('e', index);
+    const auto end = encoded_value.find('e', index);
     if (end == std::string::npos) {
         throw std::runtime_error("Invalid encoded value: " + encoded_value);
     }
-    std::string number_string = encoded_value.substr(index, end - index);
+    const auto number_string = encoded_value.substr(index, end - index);
     index = end + 1;
-    return json(std::stoll(number_string));
+    return static_cast<json>(std::stoll(number_string));
 }
 
 
 json parse_list(const std::string& encoded_value, size_t& index) {
-    json array = json::array();
+    auto array = json::array();
     index++;
     while (encoded_value[index] != 'e') {
         array.push_back(decode_bencoded_value(encoded_value, index));
@@ -46,7 +45,8 @@ json parse_dictionary(const std::string& encoded_value, std::size_t& index) {
     index++;
     while (encoded_value[index] != 'e') {
         auto temp = decode_bencoded_value(encoded_value, index).dump();
-        auto name = temp.substr(1, temp.size()-2);
+        // auto res = temp.is_string();
+        const std::string name = temp.substr(1, temp.size()-2);
         dict[name] = decode_bencoded_value(encoded_value, index);
     }
     index++;
@@ -167,10 +167,10 @@ BencodedValuePtr decode_bencoded_value(const std::string& encoded_value) {
 }
 
 
-namespace coder {
-namespace to_string {
+
+namespace coder::to_string {
 std::string encode(const std::string& val) {
     return std::to_string(val.length()) + ":" + val;
 }
 }
-}
+

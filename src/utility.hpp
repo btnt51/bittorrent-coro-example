@@ -1,6 +1,7 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 #include <string>
+#include <regex>
 
 #include "coder.hpp"
 
@@ -56,17 +57,17 @@ inline std::string extract_host_from_announce(const std::string& announce_url) {
     }
 
     // Хост:порт в announce_url[start : slash_pos]
-    std::string host_port = announce_url.substr(start, slash_pos - start);
+    return announce_url.substr(start, slash_pos - start);
 
     // Найдём двоеточие, указывающее на порт
-    auto colon_pos = host_port.find(':');
-    if (colon_pos != std::string::npos) {
-        // хост до двоеточия
-        return host_port.substr(0, colon_pos);
-    } else {
-        // Порт не указан, значит весь host_port - это хост
-        return host_port;
-    }
+    // auto colon_pos = host_port.find(':');
+    // if (colon_pos != std::string::npos) {
+    //     // хост до двоеточия
+    //     return host_port.substr(0, colon_pos);
+    // } else {
+    //     // Порт не указан, значит весь host_port - это хост
+    //     return host_port;
+    // }
 }
 
 inline std::vector<boost::asio::ip::tcp::endpoint> parse_compact_peers(const std::string& body) {
@@ -112,6 +113,19 @@ inline std::string url_encode(const std::string& value) {
     }
 
     return escaped.str();
+}
+
+inline std::pair<std::string, std::string> prepare_hostname_for_resolve(const std::string& hostname) {
+    auto temp = extract_host_from_announce(hostname);
+    std::regex ipv4("^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\\.(?!$)|$)){4}$");
+    std::smatch match;
+    if (std::regex_search(temp, match, ipv4)) {
+        temp = match[0];
+    }
+    if (auto pos = temp.find(':'); pos != std::string::npos) {
+        return std::make_pair(temp.substr(0, pos), temp.substr(pos+1, temp.length()-pos));
+    }
+    return std::make_pair(temp, "http");
 }
 
 }

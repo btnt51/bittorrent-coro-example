@@ -5,18 +5,20 @@
 #include <boost/asio.hpp>
 namespace network {
 torrent_session::torrent_session(boost::asio::io_context& io_context, const torrent_file& file,
-    std::optional<boost::asio::ip::tcp::endpoint> endpoint) : io_(io_context), file_(file), announce_host_(endpoint) {
+    const std::optional<boost::asio::ip::tcp::endpoint>& endpoint) : io_(io_context), file_(file), announce_host_(endpoint) {
     generate_peer_id();
 }
 
 boost::asio::awaitable<boost::asio::ip::tcp::endpoint> torrent_session::resolve_ip_by_host() {
     boost::asio::ip::tcp::resolver resolver(io_);
     try {
-        auto results = co_await resolver.async_resolve(utility::http::extract_host_from_announce(std::string{file_.get_announce()}), "", boost::asio::use_awaitable);
+        auto [hostname, service] = utility::http::prepare_hostname_for_resolve(std::string{file_.get_announce()});
+        auto results = co_await resolver.async_resolve(hostname, service, boost::asio::use_awaitable);
         if (results.empty()) {
             throw std::runtime_error("No endpoints resolved for host");
         }
         announce_host_ = *results.begin();
+
         co_return *announce_host_;
     } catch (const std::exception& ex) {
         throw std::runtime_error("Failed to resolve host: " + std::string(ex.what()));
@@ -32,7 +34,6 @@ torrent_session::~torrent_session() {
 
 boost::asio::awaitable<bool> torrent_session::add_peers() {
     auto peers = co_await get_peers();
-    std::cout << "peers size: " << peers.size() << std::endl;
     for (const auto& peer : peers) {
             std::cout << peer << "\n";
     }
@@ -40,7 +41,6 @@ boost::asio::awaitable<bool> torrent_session::add_peers() {
 
 boost::asio::awaitable<boost::asio::ip::tcp::socket> torrent_session::connect_to_tracker() {
     boost::asio::ip::tcp::socket socket(io_);
-    std::cout << "xyi1 announce_host: " << *announce_host_ << std::endl;
     co_await socket.async_connect(*announce_host_, boost::asio::use_awaitable);
 
     if (!socket.is_open()) {
@@ -90,7 +90,6 @@ boost::asio::awaitable<std::vector<boost::asio::ip::tcp::endpoint>> torrent_sess
 
     // Read response
     std::string body = co_await read_http_response(socket);
-    std::cout << body << std::endl;
 
     co_return parse_peers_from_body(body);;
 }

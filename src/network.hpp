@@ -26,7 +26,7 @@ private:
 class torrent_session {
 public:
     torrent_session(boost::asio::io_service& io_service, const torrent_file& file,
-        std::optional<boost::asio::ip::tcp::endpoint> = {});
+        const std::optional<boost::asio::ip::tcp::endpoint>& = {});
 
     boost::asio::awaitable<boost::asio::ip::tcp::endpoint> resolve_ip_by_host();
 
